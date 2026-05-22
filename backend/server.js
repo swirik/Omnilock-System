@@ -28,6 +28,8 @@ const triggerSmartAlert = async () => {
     const lon = data.location?.lon || "Unknown";
     const lock = data.isLocked ? "Locked" : "Unlocked";
     const mapsLink = `https://maps.google.com/?q=${lat},${lon}`;
+    
+    const targetPhoneNumber = data.ownerPhoneNumber || process.env.OWNER_PHONE_NUMBER;
 
     const prompt = `Write a highly urgent, plain-English SMS (maximum 120 characters) to a vehicle owner. Context: 3 consecutive failed biometric access attempts detected. Telemetry: Location is ${lat}, ${lon}. Lock status: ${lock}. Do not include hashtags.`;
 
@@ -39,7 +41,7 @@ const triggerSmartAlert = async () => {
     await axios.post('https://www.iprogsms.com/api/v1/sms/send', {
       api_token: process.env.IPROGSMS_TOKEN,
       sender_id: process.env.IPROGSMS_SENDER_ID,
-      to: process.env.OWNER_PHONE_NUMBER,
+      to: targetPhoneNumber,
       message: alertMessage
     });
     
