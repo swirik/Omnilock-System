@@ -18,13 +18,15 @@ import {
   Users,
   Trash2,
   Loader2,
-  XCircle
+  XCircle,
+  Phone,
+  Save
 } from 'lucide-react';
 
 const DATABASE_URL = "https://anti-theft-system-50561-default-rtdb.asia-southeast1.firebasedatabase.app";
 const SECRET = "WqaYphYJ2GmcBetMgCUp1DrU2KzGZ7toeSYD3ABt";
 const PATH = `/artifacts/anti-theft-app/public/data/vehicle/status.json?auth=${SECRET}`;
-const PYTHON_SERVER_URL = "http://192.168.1.101:5000";
+const PYTHON_SERVER_URL = "http://SWIRIK-LAB:5000";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -43,6 +45,9 @@ export default function App() {
   const [profiles, setProfiles] = useState([]);
   const [isRegistering, setIsRegistering] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+  
+  const [ownerPhoneNumber, setOwnerPhoneNumber] = useState('');
+  const [inputPhoneNumber, setInputPhoneNumber] = useState('');
 
   const isUpdating = useRef(false);
   const prevIsRegistering = useRef(false);
@@ -110,6 +115,13 @@ export default function App() {
           setIsLocked(data.isLocked ?? true);
           setAlarmActive(data.alarmActive ?? false);
           
+          if (data.ownerPhoneNumber !== undefined && data.ownerPhoneNumber !== ownerPhoneNumber) {
+            setOwnerPhoneNumber(data.ownerPhoneNumber);
+            if (inputPhoneNumber === '') {
+              setInputPhoneNumber(data.ownerPhoneNumber);
+            }
+          }
+          
           if (data.lastVerifiedFace && data.lastVerifiedFace !== lastVerifiedFace) {
             setLastVerifiedFace(data.lastVerifiedFace);
             if (data.rfidStatus === 'idle') {
@@ -138,7 +150,7 @@ export default function App() {
     fetchData();
     const interval = setInterval(fetchData, 1000);
     return () => clearInterval(interval);
-  }, [isRegistering, lastVerifiedFace, rfidStatus]);
+  }, [isRegistering, lastVerifiedFace, rfidStatus, ownerPhoneNumber, inputPhoneNumber]);
 
   useEffect(() => {
     if (prevIsRegistering.current && !isRegistering && !lastVerifiedFace) {
@@ -227,6 +239,12 @@ export default function App() {
       setAlarmActive(false);
       updateVehicleStatus({ alarmActive: false });
     }, 3000);
+  };
+
+  const handleSavePhone = () => {
+    updateVehicleStatus({ ownerPhoneNumber: inputPhoneNumber });
+    setOwnerPhoneNumber(inputPhoneNumber);
+    showNotification("Alert Number Updated", "success");
   };
 
   const handleLogoClick = () => {
@@ -439,10 +457,10 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="bg-slate-800/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-700 space-y-2">
-                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-700/50 pb-3">Hardware Diagnostics</h2>
+                <div className="bg-slate-800/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-700 space-y-4">
+                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest border-b border-slate-700/50 pb-3">Hardware Diagnostics</h2>
                   
-                  <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center justify-between py-1">
                     <div className="flex items-center text-slate-300 text-sm font-medium">
                       <Activity size={16} className="mr-3 text-slate-400" /> Accelerometer
                     </div>
@@ -451,7 +469,7 @@ export default function App() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center justify-between py-1">
                     <div className="flex items-center text-slate-300 text-sm font-medium">
                       <IdCard size={16} className="mr-3 text-purple-400" /> Biometric Array
                     </div>
@@ -464,7 +482,7 @@ export default function App() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center justify-between py-1">
                     <div className="flex items-center text-slate-300 text-sm font-medium">
                       <BellOff size={16} className="mr-3 text-slate-400" /> Audio Siren
                     </div>
@@ -473,6 +491,29 @@ export default function App() {
                     </span>
                   </div>
                 </div>
+
+                <div className="bg-slate-800/50 backdrop-blur-xl p-6 rounded-3xl border border-slate-700">
+                  <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center">
+                    <Phone size={14} className="mr-2" />
+                    SMS Alert Configuration
+                  </h2>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={inputPhoneNumber}
+                      onChange={(e) => setInputPhoneNumber(e.target.value)}
+                      placeholder="e.g. 09123456789"
+                      className="bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-4 py-2 flex-1 focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <button 
+                      onClick={handleSavePhone}
+                      className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-xl transition-colors flex items-center justify-center"
+                    >
+                      <Save size={18} />
+                    </button>
+                  </div>
+                </div>
+                
               </div>
 
               <div className="order-2 lg:order-first lg:col-span-2 space-y-6 min-w-0">

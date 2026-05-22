@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include "esp_camera.h"
 #include <HTTPClient.h>
+#include <ESPmDNS.h>
 
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
@@ -21,12 +22,14 @@
 
 const char *ssid = "GLOBEWIFI_DDB90_2.4GHz";
 const char *password = "PLDTWIFI50MMS";
+const char *laptopHostname = "SWIRIK-LAB"; 
 
-const char* recognizeUrl = "http://192.168.1.101:5000/api/recognize";
-const char* enrollUrl = "http://192.168.1.101:5000/api/enroll";
+String recognizeUrl;
+String enrollUrl;
 
 void setup() {
   Serial.begin(115200);
+  
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -61,6 +64,20 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
   }
+
+  if (!MDNS.begin("esp32cam")) {
+    Serial.println("MDNS_FAIL");
+    return;
+  }
+
+  IPAddress serverIp = MDNS.queryHost(laptopHostname);
+  while (serverIp.toString() == "0.0.0.0") {
+    delay(1000);
+    serverIp = MDNS.queryHost(laptopHostname);
+  }
+
+  recognizeUrl = "http://" + serverIp.toString() + ":5000/api/recognize";
+  enrollUrl = "http://" + serverIp.toString() + ":5000/api/enroll";
 }
 
 void loop() {
@@ -69,9 +86,9 @@ void loop() {
     cmd.trim();
 
     if (cmd == "SCAN") {
-      processImageTask(recognizeUrl, false);
+      processImageTask(recognizeUrl.c_str(), false);
     } else if (cmd == "ENROLL") {
-      processImageTask(enrollUrl, true);
+      processImageTask(enrollUrl.c_str(), true);
     }
   }
 }
