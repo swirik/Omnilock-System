@@ -73,8 +73,15 @@ void mp3PlayTrack(byte folder, byte track) {
 }
 
 void mp3Stop() {
+  mp3SetVolume(0);
+  delay(50);
+  byte pauseCmd[] = {0x7E, 0x02, 0x0E, 0xEF};
+  sendMP3Command(pauseCmd, 4);
+  delay(50);
   byte stopCmd[] = {0x7E, 0x02, 0x16, 0xEF};
   sendMP3Command(stopCmd, 4);
+  delay(50);
+  mp3SetVolume(25);
 }
 
 void mp3LoopTrack() {
@@ -116,8 +123,10 @@ void patchAlarmState(bool active) {
 }
 
 void toggleLockState(bool armSystem) {
+  detachInterrupt(digitalPinToInterrupt(BUTTON_PIN));
   isArmed = armSystem;
   ignoreMovementUntil = millis() + 5000;
+  
   if (isArmed) {
     digitalWrite(IGNITION_RELAY_PIN, LOW);
     digitalWrite(SOLENOID_RELAY_PIN, HIGH);
@@ -145,6 +154,8 @@ void toggleLockState(bool armSystem) {
   }
   
   resetIdleScreen();
+  buttonInterruptFired = false;
+  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleButton, FALLING);
 }
 
 void processMovement() {
