@@ -20,7 +20,9 @@ import {
   Loader2,
   XCircle,
   Phone,
-  Save
+  Save,
+  Power,
+  Package
 } from 'lucide-react';
 
 const DATABASE_URL = "https://anti-theft-system-50561-default-rtdb.asia-southeast1.firebasedatabase.app";
@@ -433,6 +435,27 @@ export default function App() {
                   >
                     {isLocked ? <Unlock size={20} className="mr-3" /> : <Lock size={20} className="mr-3" />}
                     {isLocked ? 'DISENGAGE SECURITY' : 'ENGAGE SECURITY'}
+                  </button>
+
+                  <button 
+                    onClick={() => { if(!isLocked) handleToggleLock(); }}
+                    disabled={isLocked}
+                    className={`flex flex-col items-center justify-center py-5 px-2 rounded-2xl transition-all duration-300 border ${
+                      isLocked 
+                        ? 'bg-slate-800/50 text-slate-600 border-slate-800 cursor-not-allowed' 
+                        : 'bg-red-900/40 hover:bg-red-900/60 text-red-400 border-red-500/50'
+                    }`}
+                  >
+                    <Power size={26} className="mb-3" />
+                    <span className="text-xs font-bold tracking-wider uppercase">Kill Switch</span>
+                  </button>
+
+                  <button 
+                    onClick={() => showNotification("U-Box Solenoid Unlocked", "success")}
+                    className="flex flex-col items-center justify-center py-5 px-2 bg-slate-800 hover:bg-slate-700 rounded-2xl text-slate-200 transition-colors border border-slate-700"
+                  >
+                    <Package size={26} className="mb-3 text-orange-400" />
+                    <span className="text-xs font-bold tracking-wider uppercase">Open U-Box</span>
                   </button>
 
                   <button 

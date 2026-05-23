@@ -80,11 +80,11 @@ app.post('/api/verify-face', async (req, res) => {
   } else {
     failedAttempts++;
     console.log(`[AUTH] Biometric mismatch. Strike ${failedAttempts}/3.`);
-    payload = { rfidStatus: 'unauthorized', lastVerifiedFace: null, alarmActive: true };
+    payload = { rfidStatus: 'unauthorized', lastVerifiedFace: null };
     
     if (failedAttempts >= 3) {
       triggerSmartAlert();
-      failedAttempts = 0; // Reset after triggering alert
+      failedAttempts = 0; 
     }
   }
 
