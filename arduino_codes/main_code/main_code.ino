@@ -18,8 +18,6 @@ Adafruit_SH1106G display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 #define CAM_RX_PIN 16
 #define CAM_TX_PIN 17
 #define BUTTON_PIN 13
-#define GREEN_LED 14
-#define RED_LED 32
 #define SOLENOID_RELAY_PIN 26
 #define IGNITION_RELAY_PIN 27
 
@@ -41,6 +39,7 @@ bool authRequested = false;
 unsigned long lastCloudCheck = 0;
 unsigned long lastMpuCheck = 0;
 unsigned long ignoreMovementUntil = 0;
+unsigned long ignoreButtonUntil = 0;
 bool isEnrolling = false;
 bool isScanning = false;
 unsigned long scanStartTime = 0;
@@ -99,15 +98,13 @@ void syncMPUBaseline() {
 
 void resetIdleScreen() {
   display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SH110X_WHITE);
-  display.setCursor(0,0);
   if (isArmed) {
+    display.setTextSize(1);
+    display.setTextColor(SH110X_WHITE);
+    display.setCursor(0,0);
     display.println("System Locked.");
-  } else {
-    display.println("System Unlocked.");
+    display.println("Press Button to Scan.");
   }
-  display.println("Press Button to Scan.");
   display.display();
 }
 
@@ -194,23 +191,23 @@ void processResult(String status, String faceId) {
   if (status == "success") {
     display.println("Access Granted");
     display.println("ID: " + faceId);
-    digitalWrite(GREEN_LED, HIGH);
+    display.display();
     failedAttempts = 0;
+    delay(2500);
     toggleLockState(false);
-    delay(2000);
-    digitalWrite(GREEN_LED, LOW);
   } else {
     if (status == "timeout") {
       display.println("Scan Timeout");
     } else {
       display.println("Access Denied");
     }
-    digitalWrite(RED_LED, HIGH);
+    display.display();
     failedAttempts++;
 
     if (failedAttempts >= 3) {
       display.setCursor(0, 30);
       display.println("SYSTEM LOCKDOWN");
+      display.display();
       toggleLockState(true);
       isAlarmPlaying = true;
       patchAlarmState(true);
@@ -219,12 +216,9 @@ void processResult(String status, String faceId) {
       failedAttempts = 0;
     }
 
-    delay(2000);
-    digitalWrite(RED_LED, LOW);
+    delay(2500);
+    resetIdleScreen();
   }
-  
-  display.display();
-  resetIdleScreen();
 }
 
 void handleEnrollmentFeedback(String feedback) {
@@ -239,25 +233,21 @@ void handleEnrollmentFeedback(String feedback) {
   if (feedback == "NO_FACE") {
     display.println("NO FACE DETECTED");
     display.println("Move into frame");
-    digitalWrite(RED_LED, HIGH);
+    display.display();
     delay(3000);
-    digitalWrite(RED_LED, LOW);
   } 
   else if (feedback == "ENROLL_SUCCESS") {
     display.println("BIOMET SAVED");
-    digitalWrite(GREEN_LED, HIGH);
+    display.display();
     delay(3000);
-    digitalWrite(GREEN_LED, LOW);
   }
   else if (feedback == "ENROLL_FAIL") {
     display.println("REGISTRATION FAILED");
-    digitalWrite(RED_LED, HIGH);
+    display.display();
     delay(3000);
-    digitalWrite(RED_LED, LOW);
   }
   
   isEnrolling = false;
-  display.display();
   resetIdleScreen();
 }
 
@@ -360,13 +350,8 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleButton, FALLING);
   
-  pinMode(GREEN_LED, OUTPUT);
-  pinMode(RED_LED, OUTPUT);
   pinMode(SOLENOID_RELAY_PIN, OUTPUT);
   pinMode(IGNITION_RELAY_PIN, OUTPUT);
-  
-  digitalWrite(GREEN_LED, LOW);
-  digitalWrite(RED_LED, LOW);
   
   Wire.begin(21, 22);
   Wire.setClock(400000);
@@ -404,7 +389,7 @@ void loop() {
     buttonInterruptFired = false;
     unsigned long currentMillis = millis();
     
-    if (currentMillis > 5000 && (currentMillis - lastButtonPress > 500)) {
+    if (currentMillis > 5000 && currentMillis > ignoreButtonUntil && (currentMillis - lastButtonPress > 500)) {
       lastButtonPress = currentMillis;
       if (!isEnrolling && !isScanning) {
         if (isArmed) {

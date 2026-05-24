@@ -22,7 +22,9 @@ import {
   Phone,
   Save,
   Power,
-  Package
+  Package,
+  BrainCircuit,
+  Radar
 } from 'lucide-react';
 
 const DATABASE_URL = "https://anti-theft-system-50561-default-rtdb.asia-southeast1.firebasedatabase.app";
@@ -221,19 +223,6 @@ export default function App() {
     } catch (error) {}
   };
 
-  const handleDisableAlarm = () => {
-    setAlarmActive(false);
-    setMovementDetected(false);
-    setRfidStatus('idle');
-    setLastVerifiedFace(null);
-    updateVehicleStatus({
-      alarmActive: false,
-      movementDetected: false,
-      rfidStatus: 'idle',
-      lastVerifiedFace: null
-    });
-  };
-
   const handleFindVehicle = () => {
     setAlarmActive(true);
     updateVehicleStatus({ alarmActive: true });
@@ -316,24 +305,31 @@ export default function App() {
           </div>
           
           <div className="flex gap-4">
-            <div className="flex bg-slate-900/50 p-1 rounded-2xl border border-slate-800 backdrop-blur-md">
+            <div className="flex bg-slate-900/50 p-1 rounded-2xl border border-slate-800 backdrop-blur-md overflow-x-auto">
               <button 
                 onClick={() => setActiveTab('dashboard')}
-                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`px-4 md:px-6 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 <LayoutDashboard size={16} className="inline mr-2" />
                 Dashboard
               </button>
               <button 
+                onClick={() => setActiveTab('analytics')}
+                className={`px-4 md:px-6 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'analytics' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                <BrainCircuit size={16} className="inline mr-2" />
+                AI Security
+              </button>
+              <button 
                 onClick={() => setActiveTab('profiles')}
-                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'profiles' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
+                className={`px-4 md:px-6 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'profiles' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-500 hover:text-slate-300'}`}
               >
                 <Users size={16} className="inline mr-2" />
                 Profiles ({profiles.length}/4)
               </button>
             </div>
 
-            <div className={`flex items-center px-4 py-2 rounded-2xl font-bold text-xs tracking-wider transition-colors duration-500 ${isConnected ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+            <div className={`hidden md:flex items-center px-4 py-2 rounded-2xl font-bold text-xs tracking-wider transition-colors duration-500 ${isConnected ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
               {isConnected ? <Wifi size={14} className="mr-2" /> : <WifiOff size={14} className="mr-2" />}
               {isConnected ? 'ONLINE' : 'OFFLINE'}
             </div>
@@ -343,8 +339,8 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {(movementDetected || rfidStatus === 'unauthorized') && (
-              <div className="bg-red-950/40 border border-red-500/30 p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between backdrop-blur-xl shadow-2xl gap-4">
-                <div className="flex items-center text-red-400">
+              <div className="bg-red-950/40 border border-red-500/30 p-5 rounded-3xl flex flex-col items-start justify-center backdrop-blur-xl shadow-2xl gap-2">
+                <div className="flex items-center text-red-400 w-full">
                   <div className="p-3 bg-red-500/10 rounded-2xl mr-4">
                     <ShieldAlert size={24} className="animate-pulse" />
                   </div>
@@ -357,12 +353,6 @@ export default function App() {
                     </span>
                   </div>
                 </div>
-                <button 
-                  onClick={handleDisableAlarm}
-                  className="px-6 py-3 bg-red-500 hover:bg-red-400 text-white rounded-xl font-bold text-xs tracking-wider uppercase transition-colors whitespace-nowrap shadow-lg shadow-red-900/20 w-full md:w-auto"
-                >
-                  Silence Alarm
-                </button>
               </div>
             )}
 
@@ -413,7 +403,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     onClick={handleToggleLock}
-                    className={`flex flex-col items-center justify-center py-6 px-2 rounded-3xl transition-all duration-300 border ${
+                    className={`col-span-2 flex flex-col items-center justify-center py-6 px-2 rounded-3xl transition-all duration-300 border ${
                       isLocked 
                         ? 'bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.1)]' 
                         : 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
@@ -439,19 +429,6 @@ export default function App() {
                   >
                     <Volume2 size={24} className="mb-3" />
                     <span className="text-[10px] font-black tracking-widest uppercase">Find Vehicle</span>
-                  </button>
-
-                  <button 
-                    onClick={handleDisableAlarm}
-                    disabled={!alarmActive && !movementDetected && rfidStatus !== 'unauthorized'}
-                    className={`flex flex-col items-center justify-center py-6 px-2 rounded-3xl transition-all duration-300 backdrop-blur-xl ${
-                      alarmActive || movementDetected || rfidStatus === 'unauthorized'
-                        ? 'bg-red-950/50 hover:bg-red-900/60 text-red-400 border border-red-500/30' 
-                        : 'bg-slate-900/20 text-slate-700 cursor-not-allowed border border-white/5'
-                    }`}
-                  >
-                    <ShieldCheck size={24} className="mb-3" />
-                    <span className="text-[10px] font-black tracking-widest uppercase">Silence</span>
                   </button>
                 </div>
 
@@ -541,6 +518,74 @@ export default function App() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-3xl border border-white/5 shadow-2xl">
+                <div className="flex items-center mb-6">
+                   <Activity className="text-blue-400 mr-4" size={28} />
+                   <div>
+                     <h2 className="text-lg font-black tracking-widest text-white uppercase">Threat Pattern Analysis</h2>
+                     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Vibration Classifier Model</p>
+                   </div>
+                </div>
+                
+                <div className="bg-slate-950/50 rounded-2xl p-5 mb-4 border border-white/5">
+                    <p className="text-xs text-slate-400 font-bold mb-3 uppercase tracking-wider">Recent MPU6050 Logs</p>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
+                          <span className="text-emerald-400">14:02:11</span>
+                          <span>AMP: 0.8G</span>
+                          <span>FREQ: Low</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
+                          <span className="text-emerald-400">14:02:45</span>
+                          <span>AMP: 1.2G</span>
+                          <span>FREQ: Low</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs font-mono text-slate-400">
+                          <span className="text-yellow-400">14:15:02</span>
+                          <span>AMP: 3.4G</span>
+                          <span>FREQ: High</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-blue-900/20 border border-blue-500/20 p-5 rounded-2xl">
+                    <span className="block text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">AI Classification</span>
+                    <span className="text-sm font-bold text-white tracking-wide">Environmental / Wind Gust</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-3xl border border-white/5 shadow-2xl">
+                <div className="flex items-center mb-6">
+                   <Radar className="text-purple-400 mr-4" size={28} />
+                   <div>
+                     <h2 className="text-lg font-black tracking-widest text-white uppercase">Behavioral Geofencing</h2>
+                     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Spatial Anomaly Detection</p>
+                   </div>
+                </div>
+                
+                 <div className="bg-slate-950/50 rounded-2xl p-5 mb-4 border border-white/5 space-y-4">
+                    <div className="flex justify-between items-center">
+                       <span className="text-xs text-slate-400 font-bold tracking-wider uppercase">Current Zone</span>
+                       <span className="text-xs text-white font-mono bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">WMSU Campus</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                       <span className="text-xs text-slate-400 font-bold tracking-wider uppercase">Expected Behavior</span>
+                       <span className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Aligned</span>
+                    </div>
+                </div>
+                <div className="bg-emerald-900/20 border border-emerald-500/20 p-5 rounded-2xl">
+                    <span className="block text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Risk Assessment</span>
+                    <span className="text-sm font-bold text-white tracking-wide">Low Risk - Routine Park</span>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
