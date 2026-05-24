@@ -35,7 +35,7 @@ const triggerSmartAlert = async () => {
 
     console.log(`[AI] Requesting plain-English translation from Gemini...`);
     
-    const prompt = `Write a strictly informational, calm SMS (maximum 80 characters) to a vehicle owner. Context: 3 failed biometric attempts. Lock status: ${lock}. Do not use words like URGENT, WARNING, or ALERT. Keep it robotic and standard. Do not include hashtags.`;
+    const prompt = `Write an emergency security log to a motorcycle owner. Context: 3 consecutive facial authentication failures occurred at the ignition point. System has enforced an absolute ignition lockout. Current lock status: ${lock}. Do not use fluffy or conversational filler words. Keep it structured, critical, and robotic. Max 140 characters.`;
 
     const aiResult = await model.generateContent(prompt);
     let alertMessage = aiResult.response.text().trim();

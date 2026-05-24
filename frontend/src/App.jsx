@@ -1,36 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  MapPin, 
-  ShieldAlert, 
-  ShieldCheck, 
-  Lock, 
-  Unlock, 
-  BellRing, 
-  BellOff,
-  Wifi,
-  WifiOff,
-  Activity,
-  Volume2,
-  IdCard,
-  Cpu,
-  UserCheck,
-  LayoutDashboard,
-  Users,
-  Trash2,
-  Loader2,
-  XCircle,
-  Phone,
-  Save,
-  Power,
-  Package,
-  BrainCircuit,
-  Radar
+  MapPin, ShieldAlert, ShieldCheck, Lock, Unlock, BellRing, BellOff,
+  Wifi, WifiOff, Activity, Volume2, IdCard, Cpu, UserCheck, LayoutDashboard,
+  Users, Trash2, Loader2, XCircle, Phone, Save, Power, Package, BrainCircuit, Radar, Edit2
 } from 'lucide-react';
 
 const DATABASE_URL = "https://anti-theft-system-50561-default-rtdb.asia-southeast1.firebasedatabase.app";
 const SECRET = "WqaYphYJ2GmcBetMgCUp1DrU2KzGZ7toeSYD3ABt";
 const PATH = `/artifacts/anti-theft-app/public/data/vehicle/status.json?auth=${SECRET}`;
-const PYTHON_SERVER_URL = "http://SWIRIK-LAB:5000";
+
+const PYTHON_SERVER_URL = "http://172.20.10.9:5000"; 
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -48,6 +27,8 @@ export default function App() {
   
   const [profiles, setProfiles] = useState([]);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(null);
+  const [editNameValue, setEditNameValue] = useState("");
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   
   const [ownerPhoneNumber, setOwnerPhoneNumber] = useState('');
@@ -103,6 +84,8 @@ export default function App() {
 
   useEffect(() => {
     fetchProfiles();
+    const interval = setInterval(fetchProfiles, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -211,7 +194,7 @@ export default function App() {
     
     setTimeout(() => {
       setIsRegistering(false);
-    }, 15000);
+    }, 25000);
   };
 
   const handleDeleteProfile = async (faceId) => {
@@ -219,6 +202,22 @@ export default function App() {
       await fetch(`${PYTHON_SERVER_URL}/api/profiles/${faceId}`, {
         method: 'DELETE'
       });
+      fetchProfiles();
+    } catch (error) {}
+  };
+
+  const handleRenameSubmit = async (oldName) => {
+    if (!editNameValue.trim() || editNameValue === oldName) {
+      setEditingProfile(null);
+      return;
+    }
+    try {
+      await fetch(`${PYTHON_SERVER_URL}/api/profiles/${oldName}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newName: editNameValue.trim() })
+      });
+      setEditingProfile(null);
       fetchProfiles();
     } catch (error) {}
   };
@@ -530,8 +529,8 @@ export default function App() {
                 <div className="flex items-center mb-6">
                    <Activity className="text-blue-400 mr-4" size={28} />
                    <div>
-                     <h2 className="text-lg font-black tracking-widest text-white uppercase">Threat Pattern Analysis</h2>
-                     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Vibration Classifier Model</p>
+                     <h2 className="text-lg font-black tracking-widest text-white uppercase">Motion Analyzer</h2>
+                     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">AI Classifier</p>
                    </div>
                 </div>
                 
@@ -565,8 +564,8 @@ export default function App() {
                 <div className="flex items-center mb-6">
                    <Radar className="text-purple-400 mr-4" size={28} />
                    <div>
-                     <h2 className="text-lg font-black tracking-widest text-white uppercase">Behavioral Geofencing</h2>
-                     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Spatial Anomaly Detection</p>
+                     <h2 className="text-lg font-black tracking-widest text-white uppercase">Routine Tracker</h2>
+                     <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Anomaly Detection</p>
                    </div>
                 </div>
                 
@@ -598,7 +597,7 @@ export default function App() {
                 <div>
                   <h2 className="text-xl font-black text-white tracking-widest uppercase flex items-center">
                     <Users className="mr-3 text-blue-400" size={24} />
-                    Identity Tokens
+                    Registered Users
                   </h2>
                   <p className="text-slate-500 text-xs font-bold tracking-wide mt-2">Manage active biometric profiles for vehicle access.</p>
                 </div>
@@ -664,9 +663,24 @@ export default function App() {
                       </div>
                       <div className="p-6">
                         <div className="flex justify-between items-center mb-5">
-                          <div>
+                          <div className="w-full">
                             <span className="text-[10px] font-black text-emerald-500/70 uppercase tracking-widest block mb-1">Slot 0{index + 1}</span>
-                            <h3 className="text-white font-bold tracking-wider text-sm">{profileId}</h3>
+                            {editingProfile === profileId ? (
+                              <input
+                                autoFocus
+                                type="text"
+                                value={editNameValue}
+                                onChange={(e) => setEditNameValue(e.target.value)}
+                                onBlur={() => handleRenameSubmit(profileId)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleRenameSubmit(profileId)}
+                                className="bg-slate-800 border border-blue-500/50 text-white text-sm font-bold w-full rounded px-2 py-1 outline-none"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-between group/edit cursor-pointer w-full" onClick={() => { setEditingProfile(profileId); setEditNameValue(profileId); }}>
+                                <h3 className="text-white font-bold tracking-wider text-sm truncate pr-2">{profileId}</h3>
+                                <Edit2 size={14} className="text-slate-600 group-hover/edit:text-blue-400 transition-colors" />
+                              </div>
+                            )}
                           </div>
                         </div>
                         <button 

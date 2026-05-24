@@ -42,6 +42,7 @@ unsigned long ignoreMovementUntil = 0;
 unsigned long ignoreButtonUntil = 0;
 bool isEnrolling = false;
 bool isScanning = false;
+bool isFlushingAuth = false;
 unsigned long scanStartTime = 0;
 unsigned long enrollStartTime = 0;
 int frameCount = 0;
@@ -123,7 +124,6 @@ void toggleLockState(bool armSystem) {
   detachInterrupt(digitalPinToInterrupt(BUTTON_PIN));
   isArmed = armSystem;
   ignoreMovementUntil = millis() + 5000;
-  
   if (isArmed) {
     digitalWrite(IGNITION_RELAY_PIN, LOW);
     digitalWrite(SOLENOID_RELAY_PIN, HIGH);
@@ -162,7 +162,6 @@ void processMovement() {
     return;
   }
   if (millis() - lastMpuCheck < 30) return;
-
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
@@ -187,7 +186,6 @@ void processResult(String status, String faceId) {
   display.clearDisplay();
   display.setCursor(0,0);
   ignoreMovementUntil = millis() + 5000;
-  
   if (status == "success") {
     display.println("Access Granted");
     display.println("ID: " + faceId);
@@ -203,7 +201,6 @@ void processResult(String status, String faceId) {
     }
     display.display();
     failedAttempts++;
-
     if (failedAttempts >= 3) {
       display.setCursor(0, 30);
       display.println("SYSTEM LOCKDOWN");
@@ -252,14 +249,16 @@ void handleEnrollmentFeedback(String feedback) {
 }
 
 void startAuthentication() {
-  isScanning = true;
+  isFlushingAuth = true;
+  isScanning = false;
   frameCount = 0;
   scanStartTime = millis();
-  ignoreMovementUntil = millis() + 5000;
+  ignoreMovementUntil = millis() + 10000;
+  
   display.clearDisplay();
   display.setCursor(0,0);
-  display.println("Authenticating...");
-  display.println("Looking for face...");
+  display.println("Waking Camera...");
+  display.println("Please wait...");
   display.display();
   Serial2.println("SCAN");
 }
@@ -275,6 +274,8 @@ void initiateSmartEnrollment() {
     http.end();
   }
 
+  Serial2.println("SCAN");
+
   for(int i = 5; i > 0; i--) {
     display.clearDisplay();
     display.setCursor(0,0);
@@ -289,9 +290,11 @@ void initiateSmartEnrollment() {
   display.setCursor(0,0);
   display.println("Capturing...");
   display.display();
+  
   while (Serial2.available()) {
     Serial2.read();
   }
+  
   enrollStartTime = millis(); 
   Serial2.println("ENROLL");
 }
@@ -301,7 +304,6 @@ void checkCloudCommands() {
     HTTPClient http;
     http.begin(FIREBASE_URL);
     int httpCode = http.GET();
-    
     if (httpCode > 0) {
       String payload = http.getString();
       
@@ -391,7 +393,7 @@ void loop() {
     
     if (currentMillis > 5000 && currentMillis > ignoreButtonUntil && (currentMillis - lastButtonPress > 500)) {
       lastButtonPress = currentMillis;
-      if (!isEnrolling && !isScanning) {
+      if (!isEnrolling && !isScanning && !isFlushingAuth) {
         if (isArmed) {
           authRequested = true;
         } else {
@@ -404,6 +406,11 @@ void loop() {
   if (authRequested) {
     authRequested = false;
     startAuthentication();
+  }
+
+  if (isFlushingAuth && (millis() - scanStartTime > 10000)) {
+    isFlushingAuth = false;
+    resetIdleScreen();
   }
 
   if (isScanning && (millis() - scanStartTime > 10000)) {
@@ -423,7 +430,7 @@ void loop() {
 
   processMovement();
 
-  if (!isEnrolling && !isScanning && millis() - lastCloudCheck > 3000) {
+  if (!isEnrolling && !isScanning && !isFlushingAuth && millis() - lastCloudCheck > 3000) {
     lastCloudCheck = millis();
     checkCloudCommands();
   }
@@ -431,9 +438,23 @@ void loop() {
   if (Serial2.available()) {
     String camResponse = Serial2.readStringUntil('\n');
     camResponse.trim();
-    if (isEnrolling) {
+    
+    if (isFlushingAuth) {
+      isFlushingAuth = false;
+      isScanning = true;
+      frameCount = 0;
+      scanStartTime = millis();
+      display.clearDisplay();
+      display.setCursor(0,0);
+      display.println("Authenticating...");
+      display.println("Looking for face...");
+      display.display();
+      Serial2.println("SCAN");
+    } 
+    else if (isEnrolling) {
       handleEnrollmentFeedback(camResponse);
-    } else if (isScanning) {
+    } 
+    else if (isScanning) {
       if (camResponse == "NO_FACE") {
         if (millis() - scanStartTime < 10000) {
           frameCount++;
